@@ -2,7 +2,7 @@ import express from "express";
 import bcrypt from "bcrypt";
 import session from "express-session";
 import cors from "cors";
-import { pool } from "./Db";
+import { pool } from "./Db.js";
 
 const app = express();
 
@@ -14,7 +14,7 @@ app.use(cors({
 app.use(express.json());
 
 app.use(session({
-  secret: process.env.SESSION_SECRET,
+  secret: "mysecret",
   resave: false,
   saveUninitialized: false,
   cookie: { httpOnly: true }
@@ -39,11 +39,11 @@ app.post("/login", async (req, res) => {
     .input("u", username)
     .query("SELECT * FROM Users WHERE username=@u");
 
-  if (!result.recordset.length) return res.sendStatus(401);
+  if (!result.recordset.length) return res.status(401).json({ error: "User not found" });
 
   const user = result.recordset[0];
   const ok = await bcrypt.compare(password, user.passwordHash);
-  if (!ok) return res.sendStatus(401);
+  if (!ok) return res.status(401).json({ error: "Wrong password" });
 
   req.session.userId = user.id;
   res.json({ message: "Logged in" });
@@ -58,4 +58,4 @@ app.post("/logout", (req, res) => {
   req.session.destroy(() => res.sendStatus(200));
 });
 
-app.listen(5000, () => console.log("Server running on http://localhost:5000"));
+app.listen(5000, () => console.log("Server running at http://localhost:5000"));
